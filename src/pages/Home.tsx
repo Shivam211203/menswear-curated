@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, Filter, SlidersHorizontal, Sparkles } from 'lucide-react';
 import { ProductCard } from '@/components/ProductCard';
+import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,13 @@ const Home = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [priceRange, setPriceRange] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate initial loading
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const categories = ['All', 'Shirts', 'Kurtas', 'T-Shirts', 'Jeans'];
   const priceRanges = ['All', 'Under ₹1000', '₹1000-₹2000', 'Above ₹2000'];
@@ -61,21 +69,26 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="bg-gradient-hero text-white py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-gradient-hero text-white py-20 relative overflow-hidden">
+        {/* Floating elements */}
+        <div className="absolute top-20 left-10 w-20 h-20 bg-white/10 rounded-full animate-float" />
+        <div className="absolute bottom-20 right-10 w-16 h-16 bg-accent/20 rounded-full animate-float" style={{ animationDelay: '1s' }} />
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-fade-in">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
               Elevate Your
-              <span className="bg-gradient-accent bg-clip-text text-transparent"> Style</span>
+              <span className="bg-gradient-accent bg-clip-text text-transparent animate-pulse-glow"> Style</span>
             </h1>
-            <p className="text-xl md:text-2xl opacity-90 mb-8 animate-fade-in">
+            <p className="text-xl md:text-2xl opacity-90 mb-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               Discover premium men's fashion that defines modern elegance
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
-              <Button size="lg" className="bg-accent hover:bg-accent-hover text-accent-foreground font-semibold">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up" style={{ animationDelay: '0.4s' }}>
+              <Button size="lg" className="bg-accent hover:bg-accent-hover text-accent-foreground font-semibold hover:scale-105 transition-transform">
+                <Sparkles className="h-5 w-5 mr-2" />
                 Shop Now
               </Button>
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary">
+              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary hover:scale-105 transition-all">
                 View Collection
               </Button>
             </div>
@@ -208,10 +221,18 @@ const Home = () => {
           </div>
 
           {/* Products Grid */}
-          {filteredProducts.length > 0 ? (
+          {isLoading ? (
+            <LoadingSkeleton />
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {filteredProducts.map((product, index) => (
+                <div 
+                  key={product.id} 
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           ) : (

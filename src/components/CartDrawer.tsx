@@ -14,21 +14,21 @@ export const CartDrawer = () => {
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity animate-fade-in"
+        className="fixed inset-0 bg-black/50 z-50 transition-opacity duration-300 animate-fade-in"
         onClick={toggleCart}
       />
       
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background shadow-strong z-50 animate-slide-in">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background shadow-strong z-50 animate-slide-in transform transition-transform duration-500">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="flex items-center justify-between p-6 border-b border-border animate-slide-down">
             <div className="flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-primary" />
+              <ShoppingBag className="h-5 w-5 text-primary animate-bounce-in" />
               <h2 className="text-lg font-semibold">Shopping Cart</h2>
-              <Badge variant="secondary">{items.length}</Badge>
+              <Badge variant="secondary" className="animate-bounce-in">{items.length}</Badge>
             </div>
-            <Button variant="ghost" size="icon" onClick={toggleCart}>
+            <Button variant="ghost" size="icon" onClick={toggleCart} className="hover:scale-110 transition-transform">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -36,18 +36,22 @@ export const CartDrawer = () => {
           {/* Cart Items */}
           <div className="flex-1 overflow-y-auto">
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
+              <div className="flex flex-col items-center justify-center h-full p-6 text-center animate-zoom-in">
+                <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4 animate-float" />
                 <h3 className="text-lg font-medium text-foreground mb-2">Your cart is empty</h3>
                 <p className="text-muted-foreground mb-4">Add some items to get started</p>
-                <Button onClick={toggleCart} className="bg-primary hover:bg-primary-hover">
+                <Button onClick={toggleCart} className="bg-primary hover:bg-primary-hover hover:scale-105 transition-transform">
                   Continue Shopping
                 </Button>
               </div>
             ) : (
               <div className="p-4 space-y-4">
-                {items.map((item) => (
-                  <div key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} className="flex gap-4 p-4 border border-border rounded-lg bg-card">
+                {items.map((item, index) => (
+                  <div 
+                    key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} 
+                    className="flex gap-4 p-4 border border-border rounded-lg bg-card animate-slide-up hover:shadow-medium transition-all duration-300"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
                     {/* Product Image */}
                     <img
                       src={item.product.image}

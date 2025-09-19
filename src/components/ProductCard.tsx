@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { ShoppingCart, Heart, Sparkles } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -16,14 +16,23 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
   const [selectedColor, setSelectedColor] = useState(product.colors[0]);
   const [isLiked, setIsLiked] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    setIsAddingToCart(true);
+    
+    // Simulate loading for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     addToCart(product, selectedSize, selectedColor, 1);
     toast({
       title: "Added to cart!",
       description: `${product.name} - ${selectedSize}, ${selectedColor}`,
       duration: 2000,
     });
+    
+    setIsAddingToCart(false);
   };
 
   const discountPercentage = product.originalPrice 
@@ -31,19 +40,26 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     : 0;
 
   return (
-    <div className="group relative bg-card rounded-xl shadow-soft hover:shadow-medium transition-all duration-300 overflow-hidden animate-fade-in">
+    <div className="group relative bg-card rounded-xl shadow-soft hover:shadow-glow transition-all duration-500 overflow-hidden animate-zoom-in hover:scale-[1.02] hover:-translate-y-1">
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gradient-to-r from-muted via-muted/50 to-muted bg-shimmer animate-shimmer" />
+        )}
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className={`w-full h-full object-cover group-hover:scale-110 transition-all duration-700 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
           loading="lazy"
+          onLoad={() => setImageLoaded(true)}
         />
         
         {/* Discount Badge */}
         {discountPercentage > 0 && (
-          <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-semibold">
+          <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground font-semibold animate-bounce-in">
+            <Sparkles className="h-3 w-3 mr-1" />
             -{discountPercentage}%
           </Badge>
         )}
@@ -52,25 +68,35 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-3 right-3 bg-white/90 hover:bg-white transition-colors rounded-full h-9 w-9"
+          className="absolute top-3 right-3 bg-white/90 hover:bg-white transition-all duration-300 rounded-full h-9 w-9 hover:scale-110"
           onClick={() => setIsLiked(!isLiked)}
         >
           <Heart 
-            className={`h-4 w-4 transition-colors ${
-              isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'
+            className={`h-4 w-4 transition-all duration-300 ${
+              isLiked ? 'fill-red-500 text-red-500 animate-bounce-in' : 'text-gray-600'
             }`} 
           />
         </Button>
 
         {/* Quick Add Overlay */}
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
-          <div className="w-full p-4 bg-gradient-to-t from-black/60 to-transparent">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-end">
+          <div className="w-full p-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
             <Button
               onClick={handleAddToCart}
-              className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium"
+              disabled={isAddingToCart}
+              className="w-full bg-primary hover:bg-primary-hover text-primary-foreground font-medium disabled:opacity-70 hover:scale-105 transition-transform"
             >
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              Quick Add
+              {isAddingToCart ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Adding...
+                </div>
+              ) : (
+                <>
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Quick Add
+                </>
+              )}
             </Button>
           </div>
         </div>

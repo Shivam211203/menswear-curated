@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Save, X, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,15 +8,23 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { AdminLogin } from '@/components/AdminLogin';
+import { useAdmin } from '@/contexts/AdminContext';
 import { sampleProducts } from '@/data/products';
 import { Product, AdminFormData } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
+  const { isAuthenticated, logout } = useAdmin();
   const { toast } = useToast();
   const [products, setProducts] = useState<Product[]>(sampleProducts);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <AdminLogin onLogin={() => {}} />;
+  }
   
   const [formData, setFormData] = useState<AdminFormData>({
     name: '',
@@ -157,38 +165,48 @@ const Admin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background animate-fade-in">
       {/* Header */}
-      <div className="bg-gradient-primary text-white py-8">
+      <div className="bg-gradient-primary text-white py-8 animate-slide-down">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Admin Panel</h1>
               <p className="opacity-90">Manage your product catalog</p>
             </div>
-            <Button
-              onClick={openAddForm}
-              className="bg-accent hover:bg-accent-hover text-accent-foreground"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={openAddForm}
+                className="bg-accent hover:bg-accent-hover text-accent-foreground hover:scale-105 transition-transform"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+              <Button
+                variant="outline"
+                onClick={logout}
+                className="border-white text-white hover:bg-white hover:text-primary"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-slide-up">
+          <Card className="hover:shadow-medium transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
               <div className="text-2xl font-bold text-primary">{products.length}</div>
               <p className="text-muted-foreground">Total Products</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="hover:shadow-medium transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-success">{products.filter(p => p.isVisible).length}</div>
+              <div className="text-2xl font-bold text-success animate-pulse-glow">{products.filter(p => p.isVisible).length}</div>
               <p className="text-muted-foreground">Visible Products</p>
             </CardContent>
           </Card>
