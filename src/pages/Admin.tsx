@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Save, X, LogOut } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Save, X, LogOut, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,15 +9,17 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AdminLogin } from '@/components/AdminLogin';
+import { ImageUpload } from '@/components/ImageUpload';
 import { useAdmin } from '@/contexts/AdminContext';
-import { sampleProducts } from '@/data/products';
-import { Product, AdminFormData } from '@/types';
+import { productService, Product } from '@/lib/supabase';
+import { AdminFormData } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
   const { isAuthenticated, logout } = useAdmin();
   const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>(sampleProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<AdminFormData>({
@@ -60,6 +62,44 @@ if (!isAuthenticated) {
   return <AdminLogin onLogin={() => {}} />;
 }
 
+// Load products from Supabase
+useEffect(() => {
+  loadProducts();
+}, []);
+
+const loadProducts = async () => {
+  try {
+    setIsLoading(true);
+    const data = await productService.getAllProducts();
+    // Transform database format to frontend format
+    const transformedProducts = data.map(item => ({
+      id: item.id,
+      name: item.name,
+      brand: item.brand,
+      price: item.price,
+      originalPrice: item.original_price,
+      category: item.category,
+      sizes: item.sizes,
+      colors: item.colors,
+      stock: item.stock,
+      description: item.description,
+      image: item.image,
+      isVisible: item.is_visible,
+      createdAt: new Date(item.created_at)
+    }));
+    setProducts(transformedProducts);
+  } catch (error) {
+    console.error('Error loading products:', error);
+    toast({
+      title: "Error",
+      description: "Failed to load products. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 const openAddForm = () => {
     resetForm();
     setIsFormOpen(true);
@@ -101,7 +141,7 @@ const openAddForm = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.brand || !formData.price || !formData.image || formData.sizes.length === 0 || formData.colors.length === 0) {
@@ -113,8 +153,7 @@ const openAddForm = () => {
       return;
     }
 
-    const productData: Product = {
-      id: editingProduct?.id || Date.now().toString(),
+    const productData = {
       name: formData.name,
       brand: formData.brand,
       price: parseFloat(formData.price),
@@ -126,41 +165,71 @@ const openAddForm = () => {
       description: formData.description,
       image: formData.image,
       isVisible: formData.isVisible,
-      createdAt: editingProduct?.createdAt || new Date(),
     };
 
-    if (editingProduct) {
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? productData : p));
+    try {
+      if (editingProduct) {
+        await productService.updateProduct(editingProduct.id, productData);
+        toast({
+          title: "Success",
+          description: "Product updated successfully",
+        });
+      } else {
+        await productService.addProduct(productData);
+        toast({
+          title: "Success",
+          description: "Product added successfully",
+        });
+      }
+
+      setIsFormOpen(false);
+      resetForm();
+      loadProducts(); // Refresh the products list
+    } catch (error) {
+      console.error('Error saving product:', error);
       toast({
-        title: "Success",
-        description: "Product updated successfully",
-      });
-    } else {
-      setProducts(prev => [...prev, productData]);
-      toast({
-        title: "Success",
-        description: "Product added successfully",
+        title: "Error",
+        description: "Failed to save product. Please try again.",
+        variant: "destructive",
       });
     }
-
-    setIsFormOpen(false);
-    resetForm();
   };
 
-  const handleDelete = (productId: string) => {
+  const handleDelete = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(prev => prev.filter(p => p.id !== productId));
-      toast({
-        title: "Success",
-        description: "Product deleted successfully",
-      });
+      try {
+        await productService.deleteProduct(productId);
+        toast({
+          title: "Success",
+          description: "Product deleted successfully",
+        });
+        loadProducts(); // Refresh the products list
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        toast({
+          title: "Error",
+          description: "Failed to delete product. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const toggleVisibility = (productId: string) => {
-    setProducts(prev => prev.map(p => 
-      p.id === productId ? { ...p, isVisible: !p.isVisible } : p
-    ));
+  const toggleVisibility = async (productId: string) => {
+    try {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      
+      await productService.updateProduct(productId, { isVisible: !product.isVisible });
+      loadProducts(); // Refresh the products list
+    } catch (error) {
+      console.error('Error updating visibility:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update product visibility",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -174,6 +243,15 @@ const openAddForm = () => {
               <p className="opacity-90">Manage your product catalog</p>
             </div>
             <div className="flex gap-2">
+              <Button
+                onClick={loadProducts}
+                variant="outline"
+                className="border-white text-white hover:bg-white hover:text-primary"
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
               <Button
                 onClick={openAddForm}
                 className="bg-accent hover:bg-accent-hover text-accent-foreground hover:scale-105 transition-transform"
@@ -390,18 +468,12 @@ const openAddForm = () => {
                   </div>
                 </div>
 
-                {/* Image URL */}
-                <div>
-                  <Label htmlFor="image">Image URL *</Label>
-                  <Input
-                    id="image"
-                    type="url"
-                    value={formData.image}
-                    onChange={(e) => setFormData(prev => ({ ...prev, image: e.target.value }))}
-                    placeholder="https://example.com/image.jpg"
-                    required
-                  />
-                </div>
+                {/* Image Upload */}
+                <ImageUpload
+                  currentImage={formData.image}
+                  onImageChange={(imageUrl) => setFormData(prev => ({ ...prev, image: imageUrl }))}
+                  label="Product Image"
+                />
 
                 {/* Description */}
                 <div>

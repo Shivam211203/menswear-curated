@@ -6,26 +6,60 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { sampleProducts } from '@/data/products';
+import { productService, Product } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
 
 const Home = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [priceRange, setPriceRange] = useState('All');
   const [sortBy, setSortBy] = useState('newest');
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Simulate initial loading
+  // Load products from Supabase
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await productService.getVisibleProducts();
+      // Transform database format to frontend format
+      const transformedProducts = data.map(item => ({
+        id: item.id,
+        name: item.name,
+        brand: item.brand,
+        price: item.price,
+        originalPrice: item.original_price,
+        category: item.category,
+        sizes: item.sizes,
+        colors: item.colors,
+        stock: item.stock,
+        description: item.description,
+        image: item.image,
+        isVisible: item.is_visible,
+        createdAt: new Date(item.created_at)
+      }));
+      setProducts(transformedProducts);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const categories = ['All', 'Shirts', 'Kurtas', 'T-Shirts', 'Jeans'];
   const priceRanges = ['All', 'Under ₹1000', '₹1000-₹2000', 'Above ₹2000'];
 
   const filteredProducts = useMemo(() => {
-    let filtered = sampleProducts.filter(product => product.isVisible);
+    let filtered = products.filter(product => product.isVisible);
 
     // Search filter
     if (searchQuery) {
@@ -279,7 +313,7 @@ const Home = () => {
                   </div>
                   <h3 className="text-xl font-semibold mb-2">{category}</h3>
                   <p className="text-muted-foreground">
-                    {sampleProducts.filter(p => p.category === category).length} items
+                    {products.filter(p => p.category === category).length} items
                   </p>
                 </CardContent>
               </Card>
