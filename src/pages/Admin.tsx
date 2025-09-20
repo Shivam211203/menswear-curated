@@ -20,12 +20,6 @@ const Admin = () => {
   const [products, setProducts] = useState<Product[]>(sampleProducts);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <AdminLogin onLogin={() => {}} />;
-  }
-  
   const [formData, setFormData] = useState<AdminFormData>({
     name: '',
     brand: '',
@@ -57,11 +51,16 @@ const Admin = () => {
       description: '',
       image: '',
       isVisible: true,
-    });
-    setEditingProduct(null);
-  };
+  });
+  setEditingProduct(null);
+};
 
-  const openAddForm = () => {
+// Show login screen if not authenticated
+if (!isAuthenticated) {
+  return <AdminLogin onLogin={() => {}} />;
+}
+
+const openAddForm = () => {
     resetForm();
     setIsFormOpen(true);
   };
