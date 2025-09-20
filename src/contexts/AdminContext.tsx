@@ -15,11 +15,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const savedAuth = localStorage.getItem('fashionStore_adminAuth');
-    if (savedAuth === 'true') {
-      setIsAuthenticated(true);
-    }
+    // For security, don't persist admin auth - always require key entry
+    localStorage.removeItem('fashionStore_adminAuth');
+    setIsAuthenticated(false);
   }, []);
 
   const login = (key: string): boolean => {
